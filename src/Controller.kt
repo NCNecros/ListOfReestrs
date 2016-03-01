@@ -55,6 +55,7 @@ class Controller {
                         val dateOfReestr = regexGroups?.groups?.get(2)?.value
                         val month = regexGroups?.groups?.get(3)?.value
                         val typeOfReestr = regexGroups?.groups?.get(5)?.value
+                        var description:String = ""
 
                         var typeOfHelp: String = ""
                         val sheetTwo = wb.getSheetAt(1)
@@ -65,27 +66,32 @@ class Controller {
                                 when (row) {
                                     15, 41 -> {
                                         typeOfHelp = "Стационар"
+                                        description = sheetTwo.getRow(row).getCell(4).stringCellValue
                                     }
                                     22, 24 -> {
                                         typeOfHelp = "Дневной стационар"
+                                        description = sheetTwo.getRow(row).getCell(4).stringCellValue
+
                                     }
                                     else -> {
                                         typeOfHelp = "Поликлиника"
+                                        description = sheetTwo.getRow(row).getCell(4).stringCellValue
                                     }
                                 }
                             }
                         }
                         val price = sheetOne.getRow(20).getCell(13).stringCellValue.replace(" ", "").toDouble()
 
-                        val schet = Schfakt(schetNumber, typeOfReestr, month, dateOfReestr, price, typeOfHelp, smo, lpu)
+                        val schet = Schfakt(schetNumber, typeOfReestr, month, dateOfReestr, price, typeOfHelp, smo, lpu, description)
                         arr.add(schet)
 
                     }
                     textArea.appendText("Обработан файл:${f.toFile().name}\n")
                 }
-                textArea.appendText("Обработано\n $countOfFiles файлов")
+
 
             }
+            textArea.appendText("Обработано\n $countOfFiles файлов")
             try {
                 val outStream = FileOutputStream("out.xls")
 
@@ -107,6 +113,7 @@ class Controller {
                 createCell(5, Cell.CELL_TYPE_STRING).setCellValue("Вид помощи")
                 createCell(6, Cell.CELL_TYPE_STRING).setCellValue("СМО")
                 createCell(7, Cell.CELL_TYPE_STRING).setCellValue("ЛПУ")
+                createCell(8, Cell.CELL_TYPE_STRING).setCellValue("Примечание")
             }
 
             for (schet in arr) {
@@ -144,8 +151,12 @@ class Controller {
                     setCellType(Cell.CELL_TYPE_STRING)
                     setCellValue(schet.lpu)
                 }
+                with(row.createCell(8)) {
+                    setCellType(Cell.CELL_TYPE_STRING)
+                    setCellValue(schet.description)
+                }
             }
-            for (numberOfColumn in 0..7) {
+            for (numberOfColumn in 0..8) {
                 sheet.autoSizeColumn(numberOfColumn)
             }
             wb.write(outStream)
@@ -178,4 +189,4 @@ class Controller {
     }
 }
 
-data class Schfakt(val number: Int?, val type: String?, val month: String?, val dateOfReestr: String?, val price: Double, val typeOfHelp: String?, val smo: String?, val lpu: String?)
+data class Schfakt(val number: Int?, val type: String?, val month: String?, val dateOfReestr: String?, val price: Double, val typeOfHelp: String?, val smo: String?, val lpu: String?, val description: String)
