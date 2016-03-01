@@ -35,7 +35,11 @@ class Controller {
     fun click() {
         val directoryChooser = DirectoryChooser()
         readSettings()
-        directoryChooser.setInitialDirectory(File(pathToDir))
+        try {
+            directoryChooser.setInitialDirectory(File(pathToDir))
+        }catch (e: Exception){
+            directoryChooser.initialDirectory= File("c:\\")
+        }
         directoryChooser.title = "Выберите каталог с файлами"
         val dir = directoryChooser.showDialog(null)
         if (dir != null) {
@@ -47,21 +51,28 @@ class Controller {
 
     private fun processDir(file: File) {
         var files = Files.list(file.toPath())
+        val a = files.filter {
+            (it.toFile().name.endsWith("zip") || it.toFile().name.endsWith("ZIP")) &&
+                    (it.toFile().name.startsWith("1207")
+                            || it.toFile().name.startsWith("1507")
+                            || it.toFile().name.startsWith("1107")
+                            || it.toFile().name.startsWith("1807")
+                            || it.toFile().name.startsWith("9007")
+                            || it.toFile().name.startsWith("4407"))
+        }
         tempDirs.clear()
         val arr = ArrayList<Schfakt>()
         var countOfFiles: Int = 0
-        for (f in files) {
-            if (f.toFile().isFile && (f.toFile().name.endsWith("zip") || f.toFile().name.endsWith("ZIP"))) {
-                countOfFiles++
-                val xlsFile = unpackReestr(f.toFile())
-                val (smo, lpu, schetNumber) = parseFileName(f)
-                val schet = if (xlsFile != null) parseExcelFile(xlsFile) else Schfakt(description = "Счет-фактура отсутствует")
-                schet.smo = smo
-                schet.lpu = lpu
-                schet.schetNumber = schetNumber
-                arr.add(schet)
-                textArea.appendText("Обработан файл: ${f.toFile().name}\n")
-            }
+        for (f  in a) {
+            countOfFiles++
+            val xlsFile = unpackReestr(f.toFile())
+            val (smo, lpu, schetNumber) = parseFileName(f)
+            val schet = if (xlsFile != null) parseExcelFile(xlsFile) else Schfakt(description = "Счет-фактура отсутствует")
+            schet.smo = smo
+            schet.lpu = lpu
+            schet.schetNumber = schetNumber
+            arr.add(schet)
+            textArea.appendText("Обработан файл: ${f.toFile().name}\n")
         }
         textArea.appendText("Обработано $countOfFiles файлов\n")
         saveReport(arr, file)
@@ -69,10 +80,10 @@ class Controller {
     }
 
     private fun removeTempDirs() {
-        for (f in tempDirs){
-            try{
-            FileUtils.deleteDirectory(f.toFile())
-            }catch (e: Exception){
+        for (f in tempDirs) {
+            try {
+                FileUtils.deleteDirectory(f.toFile())
+            } catch (e: Exception) {
                 println("Ошибка удаления временного каталога: ${e.message}")
             }
         }
@@ -212,17 +223,17 @@ class Controller {
 
     private fun createSettings() {
         val prop = Properties()
-        if (!pathToSettings.toFile().exists()){
-            prop.setProperty("pathToDir","c:\\")
+        if (!pathToSettings.toFile().exists()) {
+            prop.setProperty("pathToDir", "c:\\")
             pathToDir = "c:\\"
             prop.store(FileOutputStream(pathToSettings.toFile()), "comment")
         }
     }
 
-    private fun saveSettings(){
+    private fun saveSettings() {
         val prop = Properties()
         prop.setProperty("pathToDir", pathToDir)
-        prop.store(FileOutputStream(pathToSettings.toFile()),"commentsss")
+        prop.store(FileOutputStream(pathToSettings.toFile()), "commentsss")
     }
 
     private fun unpackReestr(file: File): Path? {
