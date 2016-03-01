@@ -4,6 +4,7 @@ import javafx.scene.control.TextArea
 import javafx.stage.DirectoryChooser
 import net.lingala.zip4j.core.ZipFile
 import net.lingala.zip4j.model.FileHeader
+import org.apache.commons.io.FileUtils
 import org.apache.poi.hssf.usermodel.HSSFWorkbook
 import org.apache.poi.ss.usermodel.Cell
 import org.apache.poi.ss.usermodel.PrintSetup
@@ -27,6 +28,10 @@ class Controller {
     internal lateinit var textArea: TextArea
     internal var pathToDir: String = ""
     internal val pathToSettings = Paths.get(System.getProperty("java.io.tmpdir"), "LORSettings")
+
+    internal val tempDirs: ArrayList<Path> = ArrayList()
+
+
     fun click() {
         val directoryChooser = DirectoryChooser()
         readSettings()
@@ -42,6 +47,7 @@ class Controller {
 
     private fun processDir(file: File) {
         var files = Files.list(file.toPath())
+        tempDirs.clear()
         val arr = ArrayList<Schfakt>()
         var countOfFiles: Int = 0
         for (f in files) {
@@ -59,6 +65,17 @@ class Controller {
         }
         textArea.appendText("Обработано $countOfFiles файлов\n")
         saveReport(arr, file)
+        removeTempDirs()
+    }
+
+    private fun removeTempDirs() {
+        for (f in tempDirs){
+            try{
+            FileUtils.deleteDirectory(f.toFile())
+            }catch (e: Exception){
+                println("Ошибка удаления временного каталога: ${e.message}")
+            }
+        }
     }
 
     private fun saveReport(arr: ArrayList<Schfakt>, file: File) {
@@ -210,6 +227,7 @@ class Controller {
 
     private fun unpackReestr(file: File): Path? {
         val outDir = Files.createTempDirectory("_tmp_${Math.random()}")
+        tempDirs.add(outDir)
         val zipFile = ZipFile(file)
         var outFile: Path? = null
         for (obj in zipFile.fileHeaders) {
