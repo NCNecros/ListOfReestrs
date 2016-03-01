@@ -30,98 +30,105 @@ class Controller {
         val directoryChooser = DirectoryChooser()
         directoryChooser.setInitialDirectory(File("d:\\Temp\\26"))
         directoryChooser.title = "Выберите каталог с файлами"
-        val file = directoryChooser.showDialog(null)
-        if (file != null) {
-            var files = Files.list(file.toPath())
-            val arr = ArrayList<Schfakt>()
-            var countOfFiles: Int = 0
-            for (f in files) {
-                if (f.toFile().isFile && (f.toFile().name.endsWith("zip") || f.toFile().name.endsWith("ZIP"))) {
-                    countOfFiles++
-                    val xlsFile = unpackReestr(f.toFile())
-                    val (smo, lpu, schetNumber) = parseFileName(f)
-                    val schet = if (xlsFile != null) parseExcelFile(xlsFile) else Schfakt(description = "Счет-фактура отсутствует")
-                    schet.smo = smo
-                    schet.lpu = lpu
-                    schet.schetNumber = schetNumber
-                    arr.add(schet)
-                    textArea.appendText("Обработан файл: ${f.toFile().name}\n")
-                }
+        val dir = directoryChooser.showDialog(null)
+        if (dir != null) {
+            processDir(dir)
+        }
+    }
+
+    private fun processDir(file: File) {
+        var files = Files.list(file.toPath())
+        val arr = ArrayList<Schfakt>()
+        var countOfFiles: Int = 0
+        for (f in files) {
+            if (f.toFile().isFile && (f.toFile().name.endsWith("zip") || f.toFile().name.endsWith("ZIP"))) {
+                countOfFiles++
+                val xlsFile = unpackReestr(f.toFile())
+                val (smo, lpu, schetNumber) = parseFileName(f)
+                val schet = if (xlsFile != null) parseExcelFile(xlsFile) else Schfakt(description = "Счет-фактура отсутствует")
+                schet.smo = smo
+                schet.lpu = lpu
+                schet.schetNumber = schetNumber
+                arr.add(schet)
+                textArea.appendText("Обработан файл: ${f.toFile().name}\n")
             }
-            textArea.appendText("Обработано $countOfFiles файлов\n")
-            try {
-                val outStream = FileOutputStream(Paths.get(file.path,"Итог.xls").toFile())
+        }
+        textArea.appendText("Обработано $countOfFiles файлов\n")
+        saveReport(arr, file)
+    }
 
-                val wb = HSSFWorkbook()
-                val sheet = wb.createSheet("Итог")
-                sheet.printSetup.paperSize = PrintSetup.A4_PAPERSIZE
+    private fun saveReport(arr: ArrayList<Schfakt>, file: File) {
+        try {
+            val outStream = FileOutputStream(Paths.get(file.path, "Итог.xls").toFile())
 
-                with(sheet.createRow(0)) {
-                    //TODO сделать заголовки жирными
-                    val font = wb.createFont()
-                    font.bold = true
-                    font.fontHeightInPoints = 18
+            val wb = HSSFWorkbook()
+            val sheet = wb.createSheet("Итог")
+            sheet.printSetup.paperSize = PrintSetup.A4_PAPERSIZE
 
-                    createCell(0, Cell.CELL_TYPE_STRING).setCellValue("Номер счета")
-                    createCell(1, Cell.CELL_TYPE_STRING).setCellValue("Тип")
-                    createCell(2, Cell.CELL_TYPE_STRING).setCellValue("Месяц")
-                    createCell(3, Cell.CELL_TYPE_STRING).setCellValue("Дата")
-                    createCell(4, Cell.CELL_TYPE_STRING).setCellValue("Сумма")
-                    createCell(5, Cell.CELL_TYPE_STRING).setCellValue("Вид помощи")
-                    createCell(6, Cell.CELL_TYPE_STRING).setCellValue("СМО")
-                    createCell(7, Cell.CELL_TYPE_STRING).setCellValue("ЛПУ")
-                    createCell(8, Cell.CELL_TYPE_STRING).setCellValue("Примечание")
-                }
-
-                for (schet in arr) {
-                    val rowNum = arr.indexOf(schet) + 1
-                    val row = sheet.createRow(rowNum)
-                    with(row.createCell(0)) {
-                        setCellType(Cell.CELL_TYPE_STRING)
-                        setCellValue(schet.schetNumber?.toString())
-                    }
-                    with(row.createCell(1)) {
-                        setCellType(Cell.CELL_TYPE_STRING)
-                        setCellValue(schet.typeOfReestr)
-                    }
-                    with(row.createCell(2)) {
-                        setCellType(Cell.CELL_TYPE_STRING)
-                        setCellValue(schet.month)
-                    }
-                    with(row.createCell(3)) {
-                        setCellType(Cell.CELL_TYPE_STRING)
-                        setCellValue(schet.dateOfReestr)
-                    }
-                    with(row.createCell(4)) {
-                        setCellType(Cell.CELL_TYPE_NUMERIC)
-                        setCellValue(schet.price)
-                    }
-                    with(row.createCell(5)) {
-                        setCellType(Cell.CELL_TYPE_STRING)
-                        setCellValue(schet.typeOfHelp)
-                    }
-                    with(row.createCell(6)) {
-                        setCellType(Cell.CELL_TYPE_STRING)
-                        setCellValue(schet.smo)
-                    }
-                    with(row.createCell(7)) {
-                        setCellType(Cell.CELL_TYPE_STRING)
-                        setCellValue(schet.lpu)
-                    }
-                    with(row.createCell(8)) {
-                        setCellType(Cell.CELL_TYPE_STRING)
-                        setCellValue(schet.description)
-                    }
-                }
-                for (numberOfColumn in 0..8) {
-                    sheet.autoSizeColumn(numberOfColumn)
-                }
-                wb.write(outStream)
-                outStream.close()
-            } catch (e: FileNotFoundException) {
-                textArea.appendText(e.message)
+            with(sheet.createRow(0)) {
+                //TODO сделать заголовки жирными
+                val font = wb.createFont()
+                font.bold = true
+                font.fontHeightInPoints = 18
+            
+                createCell(0, Cell.CELL_TYPE_STRING).setCellValue("Номер счета")
+                createCell(1, Cell.CELL_TYPE_STRING).setCellValue("Тип")
+                createCell(2, Cell.CELL_TYPE_STRING).setCellValue("Месяц")
+                createCell(3, Cell.CELL_TYPE_STRING).setCellValue("Дата")
+                createCell(4, Cell.CELL_TYPE_STRING).setCellValue("Сумма")
+                createCell(5, Cell.CELL_TYPE_STRING).setCellValue("Вид помощи")
+                createCell(6, Cell.CELL_TYPE_STRING).setCellValue("СМО")
+                createCell(7, Cell.CELL_TYPE_STRING).setCellValue("ЛПУ")
+                createCell(8, Cell.CELL_TYPE_STRING).setCellValue("Примечание")
             }
 
+            for (schet in arr) {
+                val rowNum = arr.indexOf(schet) + 1
+                val row = sheet.createRow(rowNum)
+                with(row.createCell(0)) {
+                    setCellType(Cell.CELL_TYPE_STRING)
+                    setCellValue(schet.schetNumber?.toString())
+                }
+                with(row.createCell(1)) {
+                    setCellType(Cell.CELL_TYPE_STRING)
+                    setCellValue(schet.typeOfReestr)
+                }
+                with(row.createCell(2)) {
+                    setCellType(Cell.CELL_TYPE_STRING)
+                    setCellValue(schet.month)
+                }
+                with(row.createCell(3)) {
+                    setCellType(Cell.CELL_TYPE_STRING)
+                    setCellValue(schet.dateOfReestr)
+                }
+                with(row.createCell(4)) {
+                    setCellType(Cell.CELL_TYPE_NUMERIC)
+                    setCellValue(schet.price)
+                }
+                with(row.createCell(5)) {
+                    setCellType(Cell.CELL_TYPE_STRING)
+                    setCellValue(schet.typeOfHelp)
+                }
+                with(row.createCell(6)) {
+                    setCellType(Cell.CELL_TYPE_STRING)
+                    setCellValue(schet.smo)
+                }
+                with(row.createCell(7)) {
+                    setCellType(Cell.CELL_TYPE_STRING)
+                    setCellValue(schet.lpu)
+                }
+                with(row.createCell(8)) {
+                    setCellType(Cell.CELL_TYPE_STRING)
+                    setCellValue(schet.description)
+                }
+            }
+            for (numberOfColumn in 0..8) {
+                sheet.autoSizeColumn(numberOfColumn)
+            }
+            wb.write(outStream)
+            outStream.close()
+        } catch (e: FileNotFoundException) {
+            textArea.appendText(e.message)
         }
     }
 
