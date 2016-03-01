@@ -50,7 +50,7 @@ class Controller {
             }
             textArea.appendText("Обработано $countOfFiles файлов\n")
             try {
-                val outStream = FileOutputStream("out.xls")
+                val outStream = FileOutputStream(Paths.get(file.path,"Итог.xls").toFile())
 
                 val wb = HSSFWorkbook()
                 val sheet = wb.createSheet("Итог")
