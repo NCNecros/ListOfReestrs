@@ -1,3 +1,4 @@
+package com.example
 import javafx.fxml.FXML
 import javafx.scene.control.Button
 import javafx.scene.control.TextArea
@@ -8,7 +9,6 @@ import org.apache.commons.io.FileUtils
 import org.apache.poi.hssf.usermodel.HSSFWorkbook
 import org.apache.poi.ss.usermodel.Cell
 import org.apache.poi.ss.usermodel.PrintSetup
-import org.apache.poi.ss.usermodel.WorkbookFactory
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileNotFoundException
@@ -18,9 +18,6 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.*
 
-/**
- * Created by User on 29.02.2016.
- */
 class Controller {
     @FXML
     internal lateinit var button: Button
@@ -30,13 +27,14 @@ class Controller {
     internal val pathToSettings = Paths.get(System.getProperty("java.io.tmpdir"), "LORSettings")
 
     internal val tempDirs: ArrayList<Path> = ArrayList()
+    internal val parser: Parser = Parser()
 
 
     fun click() {
         val directoryChooser = DirectoryChooser()
         readSettings()
         try {
-            directoryChooser.setInitialDirectory(File(pathToDir))
+            directoryChooser.initialDirectory = File(pathToDir)
         }catch (e: Exception){
             directoryChooser.initialDirectory= File("c:\\")
         }
@@ -50,29 +48,30 @@ class Controller {
     }
 
     private fun processDir(file: File) {
-        var files = Files.list(file.toPath())
-        val a = files.filter {
-            (it.toFile().name.endsWith("zip") || it.toFile().name.endsWith("ZIP")) &&
-                    (it.toFile().name.startsWith("1207")
-                            || it.toFile().name.startsWith("1507")
-                            || it.toFile().name.startsWith("1107")
-                            || it.toFile().name.startsWith("1807")
-                            || it.toFile().name.startsWith("9007")
-                            || it.toFile().name.startsWith("4407"))
+//        var files = Files.list(file.toPath())
+        var files2 = FileUtils.listFiles(file,null,true)
+        val a = files2.filter {
+            (it.name.endsWith("zip") || it.name.endsWith("ZIP")) &&
+                    (it.name.startsWith("1207")
+                            || it.name.startsWith("1507")
+                            || it.name.startsWith("1107")
+                            || it.name.startsWith("1807")
+                            || it.name.startsWith("9007")
+                            || it.name.startsWith("4407"))
         }
         tempDirs.clear()
         val arr = ArrayList<Schfakt>()
         var countOfFiles: Int = 0
         for (f  in a) {
             countOfFiles++
-            val xlsFile = unpackReestr(f.toFile())
-            val (smo, lpu, schetNumber) = parseFileName(f)
-            val schet = if (xlsFile != null) parseExcelFile(xlsFile) else Schfakt(description = "Счет-фактура отсутствует")
+            val xlsFile = unpackReestr(f)
+            val (smo, lpu, schetNumber) = parser.parseFileName(f.toPath())
+            val schet = if (xlsFile != null) parser.parseExcelFile(xlsFile) else Schfakt(description = "Счет-фактура отсутствует")
             schet.smo = smo
             schet.lpu = lpu
             schet.schetNumber = schetNumber
             arr.add(schet)
-            textArea.appendText("Обработан файл: ${f.toFile().name}\n")
+            textArea.appendText("Обработан файл: ${f.name}\n")
         }
         textArea.appendText("Обработано $countOfFiles файлов\n")
         saveReport(arr, file)
@@ -118,39 +117,39 @@ class Controller {
                 val rowNum = arr.indexOf(schet) + 1
                 val row = sheet.createRow(rowNum)
                 with(row.createCell(0)) {
-                    setCellType(Cell.CELL_TYPE_STRING)
+                    cellType = Cell.CELL_TYPE_STRING
                     setCellValue(schet.schetNumber?.toString())
                 }
                 with(row.createCell(1)) {
-                    setCellType(Cell.CELL_TYPE_STRING)
+                    cellType = Cell.CELL_TYPE_STRING
                     setCellValue(schet.typeOfReestr)
                 }
                 with(row.createCell(2)) {
-                    setCellType(Cell.CELL_TYPE_STRING)
+                    cellType = Cell.CELL_TYPE_STRING
                     setCellValue(schet.month)
                 }
                 with(row.createCell(3)) {
-                    setCellType(Cell.CELL_TYPE_STRING)
+                    cellType = Cell.CELL_TYPE_STRING
                     setCellValue(schet.dateOfReestr)
                 }
                 with(row.createCell(4)) {
-                    setCellType(Cell.CELL_TYPE_NUMERIC)
+                    cellType = Cell.CELL_TYPE_NUMERIC
                     setCellValue(schet.price)
                 }
                 with(row.createCell(5)) {
-                    setCellType(Cell.CELL_TYPE_STRING)
+                    cellType = Cell.CELL_TYPE_STRING
                     setCellValue(schet.typeOfHelp)
                 }
                 with(row.createCell(6)) {
-                    setCellType(Cell.CELL_TYPE_STRING)
+                    cellType = Cell.CELL_TYPE_STRING
                     setCellValue(schet.smo)
                 }
                 with(row.createCell(7)) {
-                    setCellType(Cell.CELL_TYPE_STRING)
+                    cellType = Cell.CELL_TYPE_STRING
                     setCellValue(schet.lpu)
                 }
                 with(row.createCell(8)) {
-                    setCellType(Cell.CELL_TYPE_STRING)
+                    cellType = Cell.CELL_TYPE_STRING
                     setCellValue(schet.description)
                 }
             }
@@ -164,58 +163,7 @@ class Controller {
         }
     }
 
-     fun parseExcelFile(xlsFile: Path): Schfakt {
-        val schet = Schfakt()
-         try {
-             val inputStream = FileInputStream(xlsFile.toFile())
-             val wb = WorkbookFactory.create(inputStream)
-             val sheetOne = wb.getSheetAt(0)
-             val rowThree = sheetOne.getRow(2)
-             val cell = rowThree.getCell(0)
-             val monts = "(Декабрь|Январь|Март|Апрель|Май|Июнь|Июль|Август|Сентябрь|Октябрь|Ноябрь)"
-             val types = "(основной|дополнительный|повторный)"
-             val regexGroups = " к реестру счетов №(\\d{1,5}) от (\\d{2}\\.\\d{2}.\\d{4}) за \\d{4} ($monts) ($types) по .+".toRegex().find(cell.stringCellValue)
-
-             schet.dateOfReestr = regexGroups?.groups?.get(2)?.value
-             schet.month = regexGroups?.groups?.get(3)?.value
-             schet.typeOfReestr = regexGroups?.groups?.get(5)?.value
-             val sheetTwo = wb.getSheetAt(1)
-
-             for (row in arrayOf(15, 17, 22, 24, 19, 26, 30, 31, 35, 36, 37, 38, 39, 40, 41)) {
-                 val cellWithPrice = sheetTwo.getRow(row).getCell(9).stringCellValue
-                 if (!cellWithPrice.equals("-")) {
-                     when (row) {
-                         15, 41 -> {
-                             schet.typeOfHelp = "Стационар"
-                             schet.description = sheetTwo.getRow(row).getCell(4).stringCellValue
-                         }
-                         22, 24 -> {
-                             schet.typeOfHelp = "Дневной стационар"
-                             schet.description = sheetTwo.getRow(row).getCell(4).stringCellValue
-
-                         }
-                         else -> {
-                             schet.typeOfHelp = "Поликлиника"
-                             schet.description = sheetTwo.getRow(row).getCell(4).stringCellValue
-                         }
-                     }
-                 }
-             }
-             schet.price = sheetOne.getRow(20).getCell(13).stringCellValue.replace(" ", "").toDouble()
-         }catch (e: FileNotFoundException){
-             println("Не удается найти файл")
-         }
-        return schet
-    }
-
-    private fun parseFileName(f: Path): Triple<String?, String?, Int?> {
-        val smo = "(\\d{4})(\\d{5})(\\d{5})\\.(zip|ZIP)".toRegex().find(f.fileName.toString())?.groups?.get(1)?.value
-        val lpu = "(\\d{4})(\\d{5})(\\d{5})\\.(zip|ZIP)".toRegex().find(f.fileName.toString())?.groups?.get(2)?.value
-        val schetNumber = "(\\d{4})(\\d{5})(\\d{5})\\.(zip|ZIP)".toRegex().find(f.fileName.toString())?.groups?.get(3)?.value?.toInt()
-        return Triple(smo, lpu, schetNumber)
-    }
-
-    private fun readSettings() {
+       private fun readSettings() {
         val prop = Properties()
         if (pathToSettings.toFile().exists()) {
             prop.load(FileInputStream(pathToSettings.toFile()))

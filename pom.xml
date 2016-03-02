@@ -71,7 +71,7 @@
                     <!-- MainClass in mainfest make a executable jar -->
                     <archive>
                         <manifest>
-                            <mainClass>Main</mainClass>
+                            <mainClass>com.example.Main</mainClass>
                         </manifest>
                     </archive>
 
