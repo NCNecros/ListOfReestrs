@@ -7,6 +7,7 @@ import net.lingala.zip4j.core.ZipFile
 import net.lingala.zip4j.model.FileHeader
 import org.apache.commons.io.FileUtils
 import org.apache.poi.hssf.usermodel.HSSFCell
+import org.apache.poi.hssf.usermodel.HSSFDataFormat
 import org.apache.poi.hssf.usermodel.HSSFWorkbook
 import org.apache.poi.ss.usermodel.Cell
 import org.apache.poi.ss.usermodel.PrintSetup
@@ -103,21 +104,21 @@ class Controller {
         for (s in schets){
             when(s.value){
                 "основной" -> {
-                    val folder = Paths.get(outDir.toString(), "Основные", s.key.name.substring(0..4))
+                    val folder = Paths.get(outDir.toString(), "Основные", s.key.name.substring(0..3))
                     if (!folder.toFile().exists()){
                         folder.toFile().mkdir()
                     }
                     FileUtils.copyFile(s.key,Paths.get(folder.toString(),s.key.name).toFile())
                 }
                 "дополнительный" -> {
-                    val folder = Paths.get(outDir.toString(), "Дополнительные", s.key.name.substring(0..4))
+                    val folder = Paths.get(outDir.toString(), "Дополнительные", s.key.name.substring(0..3))
                     if (!folder.toFile().exists()){
                         folder.toFile().mkdirs()
                     }
                     FileUtils.copyFile(s.key,Paths.get(folder.toString(),s.key.name).toFile())
                 }
                 "повторный" -> {
-                    val folder = Paths.get(outDir.toString(), "Повторные", s.key.name.substring(0..4))
+                    val folder = Paths.get(outDir.toString(), "Повторные", s.key.name.substring(0..3))
                     if (!folder.toFile().exists()){
                         folder.toFile().mkdir()
                     }
