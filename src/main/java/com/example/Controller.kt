@@ -10,6 +10,7 @@ import org.apache.poi.hssf.usermodel.HSSFCell
 import org.apache.poi.hssf.usermodel.HSSFWorkbook
 import org.apache.poi.ss.usermodel.Cell
 import org.apache.poi.ss.usermodel.PrintSetup
+import org.apache.poi.ss.util.CellRangeAddress
 import org.apache.poi.xssf.usermodel.XSSFCell
 import java.io.File
 import java.io.FileInputStream
@@ -191,20 +192,30 @@ class Controller {
                     setCellValue(schet.description)
                 }
             }
-            for (numberOfColumn in 0..8) {
-                sheet.autoSizeColumn(numberOfColumn)
-            }
+
             var lastRowNum = arr.size+2
             val groupedBySMO = arr.groupBy{it.smo}
             for (smo in groupedBySMO.keys){
+                val firstRowForMergeSMO = lastRowNum
                 val groupedByType = groupedBySMO[smo]!!.groupBy { it.typeOfHelp }
                 for (type in groupedByType.keys){
-                    val summ = groupedByType[type]!!.sumByDouble { it.price }
-                    sheet.createRow(lastRowNum).createCell(0, HSSFCell.CELL_TYPE_STRING).setCellValue(smo)
-                    sheet.getRow(lastRowNum).createCell(1, HSSFCell.CELL_TYPE_STRING).setCellValue(type)
-                    sheet.getRow(lastRowNum).createCell(2, HSSFCell.CELL_TYPE_NUMERIC).setCellValue(summ)
-                    lastRowNum++
+                    val firstRowForMergeByType = lastRowNum
+                    val groupedByTypeOfReestr = groupedByType[type]!!.groupBy { it.typeOfReestr }
+                    for (typeOfReestr in groupedByTypeOfReestr.keys) {
+                        val summ = groupedByTypeOfReestr[typeOfReestr]!!.sumByDouble { it.price }
+                        sheet.createRow(lastRowNum).createCell(0, HSSFCell.CELL_TYPE_STRING).setCellValue(smo)
+                        sheet.getRow(lastRowNum).createCell(1, HSSFCell.CELL_TYPE_STRING).setCellValue(type)
+                        sheet.getRow(lastRowNum).createCell(2, HSSFCell.CELL_TYPE_STRING).setCellValue(typeOfReestr)
+                        sheet.getRow(lastRowNum).createCell(3, HSSFCell.CELL_TYPE_NUMERIC).setCellValue(summ)
+                        lastRowNum++
+                    }
+                    sheet.addMergedRegion(CellRangeAddress(firstRowForMergeByType,lastRowNum-1,1,1))
                 }
+                sheet.addMergedRegion(CellRangeAddress(firstRowForMergeSMO,lastRowNum-1,0,0))
+            }
+
+            for (numberOfColumn in 0..8) {
+                sheet.autoSizeColumn(numberOfColumn)
             }
 
             wb.write(outStream)
