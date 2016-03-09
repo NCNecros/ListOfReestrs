@@ -6,9 +6,11 @@ import javafx.stage.DirectoryChooser
 import net.lingala.zip4j.core.ZipFile
 import net.lingala.zip4j.model.FileHeader
 import org.apache.commons.io.FileUtils
+import org.apache.poi.hssf.usermodel.HSSFCell
 import org.apache.poi.hssf.usermodel.HSSFWorkbook
 import org.apache.poi.ss.usermodel.Cell
 import org.apache.poi.ss.usermodel.PrintSetup
+import org.apache.poi.xssf.usermodel.XSSFCell
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileNotFoundException
@@ -192,6 +194,19 @@ class Controller {
             for (numberOfColumn in 0..8) {
                 sheet.autoSizeColumn(numberOfColumn)
             }
+            var lastRowNum = arr.size+2
+            val groupedBySMO = arr.groupBy{it.smo}
+            for (smo in groupedBySMO.keys){
+                val groupedByType = groupedBySMO[smo]!!.groupBy { it.typeOfHelp }
+                for (type in groupedByType.keys){
+                    val summ = groupedByType[type]!!.sumByDouble { it.price }
+                    sheet.createRow(lastRowNum).createCell(0, HSSFCell.CELL_TYPE_STRING).setCellValue(smo)
+                    sheet.getRow(lastRowNum).createCell(1, HSSFCell.CELL_TYPE_STRING).setCellValue(type)
+                    sheet.getRow(lastRowNum).createCell(2, HSSFCell.CELL_TYPE_NUMERIC).setCellValue(summ)
+                    lastRowNum++
+                }
+            }
+
             wb.write(outStream)
             outStream.close()
         } catch (e: FileNotFoundException) {
