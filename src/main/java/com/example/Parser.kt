@@ -5,7 +5,7 @@ import java.io.FileInputStream
 import java.io.FileNotFoundException
 import java.nio.file.Path
 
-class Parser{
+class Parser {
     fun parseFileName(f: Path): Triple<String?, String?, Int?> {
         val smo = "(\\d{4})(\\d{5})(\\d{5})\\.(zip|ZIP)".toRegex().find(f.fileName.toString())?.groups?.get(1)?.value
         val lpu = "(\\d{4})(\\d{5})(\\d{5})\\.(zip|ZIP)".toRegex().find(f.fileName.toString())?.groups?.get(2)?.value
@@ -30,7 +30,7 @@ class Parser{
             schet.typeOfReestr = regexGroups?.groups?.get(5)?.value
             val sheetTwo = wb.getSheetAt(1)
 
-            for (row in arrayOf(15, 17, 22, 24, 19, 26, 30, 31, 35, 36, 37, 38, 39, 40, 41)) {
+            for (row in arrayOf(15, 17, 22, 33, 24, 19, 26, 30, 31, 35, 36, 37, 38, 39, 40, 41)) {
                 val cellWithPrice = sheetTwo.getRow(row).getCell(9).stringCellValue
                 if (!cellWithPrice.equals("-")) {
                     when (row) {
@@ -43,6 +43,10 @@ class Parser{
                             schet.description = sheetTwo.getRow(row).getCell(4).stringCellValue
 
                         }
+                        33 -> {
+                            schet.typeOfHelp = "ФАП"
+                            schet.description = sheetTwo.getRow(row).getCell(4).stringCellValue
+                        }
                         else -> {
                             schet.typeOfHelp = "Поликлиника"
                             schet.description = sheetTwo.getRow(row).getCell(4).stringCellValue
@@ -51,10 +55,16 @@ class Parser{
                 }
             }
             schet.price = sheetOne.getRow(20).getCell(13).stringCellValue.replace(" ", "").toDouble()
-        }catch (e: FileNotFoundException){
+        } catch (e: FileNotFoundException) {
             println("Не удается найти файл: $xlsFile")
-        }catch (e: IllegalArgumentException){
+            schet.description = "Не удается найти файл"
+        } catch (e: IllegalArgumentException) {
             println("Неправильный тип файла: $xlsFile")
+            schet.description = "Неправильный тип файла"
+        } catch (e: NullPointerException) {
+            println("Неправильный тип счет-фактуры")
+            schet.description = "Скорая помощь"
+            schet.typeOfHelp = "Скорая помощь"
         }
         return schet
     }

@@ -44,7 +44,12 @@ class Controller {
             directoryChooser.initialDirectory= File("c:\\")
         }
         directoryChooser.title = "Выберите каталог с файлами"
-        val dir = directoryChooser.showDialog(null)
+        var dir: File? = null
+        try {
+            dir = directoryChooser.showDialog(null)
+        }catch (e : IllegalArgumentException){
+            directoryChooser.initialDirectory = File("c:\\")
+        }
         if (dir != null) {
             pathToDir = dir.absolutePath
             saveSettings()
@@ -53,17 +58,8 @@ class Controller {
     }
 
     private fun processDir(file: File) {
-//        var files = Files.list(file.toPath())
-        var files2 = FileUtils.listFiles(file,null,true)
-        val a = files2.filter {
-            (it.name.endsWith("zip") || it.name.endsWith("ZIP")) &&
-                    (it.name.startsWith("1207")
-                            || it.name.startsWith("1507")
-                            || it.name.startsWith("1107")
-                            || it.name.startsWith("1807")
-                            || it.name.startsWith("9007")
-                            || it.name.startsWith("4407")) && (!it.path.contains("По типам"))
-        }
+        var files = FileUtils.listFiles(file,null,true)
+        val a = getListOfFiles(files)
         tempDirs.clear()
         val arr = ArrayList<Schfakt>()
         var countOfFiles: Int = 0
@@ -85,6 +81,18 @@ class Controller {
         splitToFolders()
     }
 
+    public fun getListOfFiles(files: MutableCollection<File>): List<File> {
+        return files.filter {
+            (it.name.endsWith("zip") || it.name.endsWith("ZIP")) &&
+                    (it.name.startsWith("1207")
+                            || it.name.startsWith("1507")
+                            || it.name.startsWith("1107")
+                            || it.name.startsWith("1807")
+                            || it.name.startsWith("9007")
+                            || it.name.startsWith("4407")) && !(it.path.contains("По типам"))
+        }
+    }
+
     private fun removeTempDirs() {
         for (f in tempDirs) {
             try {
@@ -104,21 +112,54 @@ class Controller {
         for (s in schets){
             when(s.value){
                 "основной" -> {
-                    val folder = Paths.get(outDir.toString(), "Основные", s.key.name.substring(0..3))
+                    val folder = Paths.get(outDir.toString(),  s.key.name.substring(0..3),"Основные")
                     if (!folder.toFile().exists()){
                         folder.toFile().mkdir()
                     }
                     FileUtils.copyFile(s.key,Paths.get(folder.toString(),s.key.name).toFile())
                 }
                 "дополнительный" -> {
-                    val folder = Paths.get(outDir.toString(), "Дополнительные", s.key.name.substring(0..3))
+                    val folder = Paths.get(outDir.toString(),  s.key.name.substring(0..3),"Дополнительные")
                     if (!folder.toFile().exists()){
                         folder.toFile().mkdirs()
                     }
                     FileUtils.copyFile(s.key,Paths.get(folder.toString(),s.key.name).toFile())
                 }
                 "повторный" -> {
-                    val folder = Paths.get(outDir.toString(), "Повторные", s.key.name.substring(0..3))
+                    val folder = Paths.get(outDir.toString(), s.key.name.substring(0..3),"Повторные")
+                    if (!folder.toFile().exists()){
+                        folder.toFile().mkdir()
+                    }
+                    FileUtils.copyFile(s.key,Paths.get(folder.toString(),s.key.name).toFile())
+                }
+            }
+        }
+    }
+    private fun splitToFoldersByType(){
+        val outDir = Paths.get(pathToDir, "По типам")
+        if (outDir.toFile().exists()){
+            FileUtils.cleanDirectory(outDir.toFile())
+        }else{
+            outDir.toFile().mkdir()
+        }
+        for (s in schets){
+            when(s.value){
+                "основной" -> {
+                    val folder = Paths.get(outDir.toString(),  s.key.name.substring(0..3),"Основные")
+                    if (!folder.toFile().exists()){
+                        folder.toFile().mkdir()
+                    }
+                    FileUtils.copyFile(s.key,Paths.get(folder.toString(),s.key.name).toFile())
+                }
+                "дополнительный" -> {
+                    val folder = Paths.get(outDir.toString(),  s.key.name.substring(0..3),"Дополнительные")
+                    if (!folder.toFile().exists()){
+                        folder.toFile().mkdirs()
+                    }
+                    FileUtils.copyFile(s.key,Paths.get(folder.toString(),s.key.name).toFile())
+                }
+                "повторный" -> {
+                    val folder = Paths.get(outDir.toString(), s.key.name.substring(0..3),"Повторные")
                     if (!folder.toFile().exists()){
                         folder.toFile().mkdir()
                     }
@@ -193,7 +234,7 @@ class Controller {
                     setCellValue(schet.description)
                 }
             }
-
+            sheet.setAutoFilter(CellRangeAddress(0,arr.size,0,8))
             var lastRowNum = arr.size+2
             val groupedBySMO = arr.groupBy{it.smo}
             for (smo in groupedBySMO.keys){
