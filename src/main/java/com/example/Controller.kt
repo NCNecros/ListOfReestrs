@@ -44,7 +44,12 @@ class Controller {
             directoryChooser.initialDirectory= File("c:\\")
         }
         directoryChooser.title = "Выберите каталог с файлами"
-        val dir = directoryChooser.showDialog(null)
+        var dir: File? = null
+        try {
+            dir = directoryChooser.showDialog(null)
+        }catch (e : IllegalArgumentException){
+            directoryChooser.initialDirectory = File("c:\\")
+        }
         if (dir != null) {
             pathToDir = dir.absolutePath
             saveSettings()
