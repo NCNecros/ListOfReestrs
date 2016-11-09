@@ -32,7 +32,7 @@ class Controller {
 
     internal val tempDirs: ArrayList<Path> = ArrayList()
     internal val parser: Parser = Parser()
-    internal val schets: MutableMap<File, String?> = HashMap()
+    internal val schets: MutableMap<File, Schfakt> = HashMap()
 
 
     fun click() {
@@ -74,7 +74,7 @@ class Controller {
             schet.schetNumber = schetNumber
             arr.add(schet)
             textArea.appendText("Обработан файл: ${f.name}\n")
-            schets.put(f,schet.typeOfReestr)
+            schets.put(f,schet)
         }
         textArea.appendText("Обработано $countOfFiles файлов\n")
         saveReport(arr, file)
@@ -111,60 +111,42 @@ class Controller {
             outDir.toFile().mkdir()
         }
         for (s in schets){
-            when(s.value){
-                "основной" -> {
+            with(s.value){
+                if (arrayListOf("Диспансеризация взрослого населения",
+                        "Медицинские осмотры взрослых",
+                        "Медицинские осмотры несовершеннолетних",
+                        "Диспансеризация детей-сирот",
+                        "Диспансеризация детей оставшихся без попечения родителей").contains(description)){
+                    val folder = Paths.get(outDir.toString(),  s.key.name.substring(0..3),"Диспансеризация")
+                    if (!folder.toFile().exists()){
+                        folder.toFile().mkdir()
+                    }
+                    FileUtils.copyFile(s.key,Paths.get(folder.toString(),s.key.name).toFile())
+                    return@with
+                }
+                if (typeOfReestr == "основной"){
                     val folder = Paths.get(outDir.toString(),  s.key.name.substring(0..3),"Основные")
                     if (!folder.toFile().exists()){
                         folder.toFile().mkdir()
                     }
                     FileUtils.copyFile(s.key,Paths.get(folder.toString(),s.key.name).toFile())
+                    return@with
                 }
-                "дополнительный" -> {
+                if (typeOfReestr == "дополнительный"){
                     val folder = Paths.get(outDir.toString(),  s.key.name.substring(0..3),"Дополнительные")
                     if (!folder.toFile().exists()){
                         folder.toFile().mkdirs()
                     }
                     FileUtils.copyFile(s.key,Paths.get(folder.toString(),s.key.name).toFile())
+                    return@with
                 }
-                "повторный" -> {
+                if (typeOfReestr == "повторный"){
                     val folder = Paths.get(outDir.toString(), s.key.name.substring(0..3),"Повторные")
                     if (!folder.toFile().exists()){
                         folder.toFile().mkdir()
                     }
                     FileUtils.copyFile(s.key,Paths.get(folder.toString(),s.key.name).toFile())
-                }
-            }
-        }
-    }
-    private fun splitToFoldersByType(){
-        val outDir = Paths.get(pathToDir, "По типам")
-        if (outDir.toFile().exists()){
-            FileUtils.cleanDirectory(outDir.toFile())
-        }else{
-            outDir.toFile().mkdir()
-        }
-        for (s in schets){
-            when(s.value){
-                "основной" -> {
-                    val folder = Paths.get(outDir.toString(),  s.key.name.substring(0..3),"Основные")
-                    if (!folder.toFile().exists()){
-                        folder.toFile().mkdir()
-                    }
-                    FileUtils.copyFile(s.key,Paths.get(folder.toString(),s.key.name).toFile())
-                }
-                "дополнительный" -> {
-                    val folder = Paths.get(outDir.toString(),  s.key.name.substring(0..3),"Дополнительные")
-                    if (!folder.toFile().exists()){
-                        folder.toFile().mkdirs()
-                    }
-                    FileUtils.copyFile(s.key,Paths.get(folder.toString(),s.key.name).toFile())
-                }
-                "повторный" -> {
-                    val folder = Paths.get(outDir.toString(), s.key.name.substring(0..3),"Повторные")
-                    if (!folder.toFile().exists()){
-                        folder.toFile().mkdir()
-                    }
-                    FileUtils.copyFile(s.key,Paths.get(folder.toString(),s.key.name).toFile())
+                    return@with
                 }
             }
         }
