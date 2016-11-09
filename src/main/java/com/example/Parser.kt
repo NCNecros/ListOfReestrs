@@ -64,6 +64,7 @@ class Parser {
         } catch (e: NullPointerException) {
             println("Неправильный тип счет-фактуры")
             schet.description = "Скорая помощь"
+            schet.typeOfReestr = "основной"
             schet.typeOfHelp = "Скорая помощь"
         }
         return schet

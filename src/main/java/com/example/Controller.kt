@@ -39,7 +39,8 @@ class Controller {
         val directoryChooser = DirectoryChooser()
         readSettings()
         try {
-            directoryChooser.initialDirectory = File(pathToDir)
+//            directoryChooser.initialDirectory = File(pathToDir)
+            directoryChooser.initialDirectory= File("c:\\")
         }catch (e: Exception){
             directoryChooser.initialDirectory= File("c:\\")
         }
@@ -67,7 +68,7 @@ class Controller {
             countOfFiles++
             val xlsFile = unpackReestr(f)
             val (smo, lpu, schetNumber) = parser.parseFileName(f.toPath())
-            val schet = if (xlsFile != null) parser.parseExcelFile(xlsFile) else Schfakt(description = "Счет-фактура отсутствует")
+            val schet = if (xlsFile != null) parser.parseExcelFile(xlsFile) else Schfakt(description = "Счет-фактура отсутствует", typeOfReestr = "основной")
             schet.smo = smo
             schet.lpu = lpu
             schet.schetNumber = schetNumber
