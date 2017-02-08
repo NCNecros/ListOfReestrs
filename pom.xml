@@ -98,7 +98,7 @@
                             <goal>exec</goal>
                         </goals>
                         <configuration>
-                            <executable>${env.JAVA_HOME}/bin/javafxpackager.exe</executable>
+                            <executable>${env.JAVA_HOME}/bin/javapackager.exe</executable>
                             <commandlineArgs>-deploy -native -outdir d:/temp/Bundles/ -outfile Report -srcdir ${build.directory} -srcfiles ListOfReestrs-jar-with-dependencies.jar -appclass com.example.Main -name "Report" -title "Report"</commandlineArgs>
                         </configuration>
                     </execution>
@@ -140,6 +140,11 @@
             <groupId>net.lingala.zip4j</groupId>
             <artifactId>zip4j</artifactId>
             <version>1.3.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jsoup</groupId>
+            <artifactId>jsoup</artifactId>
+            <version>1.10.2</version>
         </dependency>
         <dependency>
             <groupId>commons-io</groupId>

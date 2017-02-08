@@ -42,4 +42,24 @@ class ParserTest {
         assertEquals(s.typeOfHelp, "Дневной стационар")
         assertEquals(s.price, 64751.66, 0.0)
     }
+
+    @Test
+    fun whenParserTakeTheCorrectStacionarHTMLFileItWillReturnFilledObject(){
+        val s = parser.parseHTMLFile("d:/Temp/2017-01-31/schfakt.html")
+        assertEquals(s.dateOfReestr,"31.12.2016")
+        assertEquals(s.typeOfReestr,"дополнительный")
+        assertEquals(s.typeOfHelp,"Стационар")
+        assertEquals(s.price,230697.31,0.0)
+        assertEquals(s.description,"Стационар")
+    }
+
+    @Test
+    fun whenParserTakeTheCorrectPolicHTMLFileItWillReturnFilledObject(){
+        val s = parser.parseHTMLFile("d:/Temp/2017-01-31/schfakt2.html")
+        assertEquals(s.dateOfReestr,"31.12.2016")
+        assertEquals(s.typeOfReestr,"основной")
+        assertEquals(s.typeOfHelp,"Поликлиника")
+        assertEquals(s.price,270165.18,0.0)
+        assertEquals(s.description,"Поликлиника")
+    }
 }

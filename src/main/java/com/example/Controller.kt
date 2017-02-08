@@ -1,4 +1,5 @@
 package com.example
+
 import javafx.fxml.FXML
 import javafx.scene.control.Button
 import javafx.scene.control.TextArea
@@ -7,12 +8,10 @@ import net.lingala.zip4j.core.ZipFile
 import net.lingala.zip4j.model.FileHeader
 import org.apache.commons.io.FileUtils
 import org.apache.poi.hssf.usermodel.HSSFCell
-import org.apache.poi.hssf.usermodel.HSSFDataFormat
 import org.apache.poi.hssf.usermodel.HSSFWorkbook
 import org.apache.poi.ss.usermodel.Cell
 import org.apache.poi.ss.usermodel.PrintSetup
 import org.apache.poi.ss.util.CellRangeAddress
-import org.apache.poi.xssf.usermodel.XSSFCell
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileNotFoundException
@@ -32,22 +31,23 @@ class Controller {
 
     internal val tempDirs: ArrayList<Path> = ArrayList()
     internal val parser: Parser = Parser()
-    internal val schets: MutableMap<File, String?> = HashMap()
+    internal val schets: MutableMap<File, Schfakt> = HashMap()
 
 
     fun click() {
         val directoryChooser = DirectoryChooser()
         readSettings()
         try {
-            directoryChooser.initialDirectory = File(pathToDir)
-        }catch (e: Exception){
-            directoryChooser.initialDirectory= File("c:\\")
+//            directoryChooser.initialDirectory = File(pathToDir)
+            directoryChooser.initialDirectory = File("c:\\")
+        } catch (e: Exception) {
+            directoryChooser.initialDirectory = File("c:\\")
         }
         directoryChooser.title = "Выберите каталог с файлами"
         var dir: File? = null
         try {
             dir = directoryChooser.showDialog(null)
-        }catch (e : IllegalArgumentException){
+        } catch (e: IllegalArgumentException) {
             directoryChooser.initialDirectory = File("c:\\")
         }
         if (dir != null) {
@@ -58,23 +58,41 @@ class Controller {
     }
 
     private fun processDir(file: File) {
-        var files = FileUtils.listFiles(file,null,true)
+        var files = FileUtils.listFiles(file, null, true)
         val a = getListOfFiles(files)
         tempDirs.clear()
         val arr = ArrayList<Schfakt>()
         var countOfFiles: Int = 0
-        for (f  in a) {
+        for (f in a) {
             countOfFiles++
             val xlsFile = unpackReestr(f)
             val (smo, lpu, schetNumber) = parser.parseFileName(f.toPath())
-            val schet = if (xlsFile != null) parser.parseExcelFile(xlsFile) else Schfakt(description = "Счет-фактура отсутствует")
+            var schet: Schfakt = Schfakt(description = "Счет-фактура отсутствует", typeOfReestr = "основной")
+
+            if (xlsFile != null) {
+                if (xlsFile.toString().endsWith("html")) {
+                    schet = parser.parseHTMLFile(xlsFile.toString())
+                }else if(xlsFile.toString().endsWith("xls")){
+                    if (lpu == "06540"){
+                        schet = parser.parseAmbulanceExcelFile(xlsFile)
+                    } else {
+                        schet = parser.parseExcelFile(xlsFile)
+                    }
+                }
+            }
+            if (lpu == "06540") {
+                schet.typeOfHelp = "скорая медицинская помощь"
+                schet.typeOfReestr = "основной"
+                schet.description = "Скорая помощь"
+            }
             schet.smo = smo
             schet.lpu = lpu
             schet.schetNumber = schetNumber
             arr.add(schet)
             textArea.appendText("Обработан файл: ${f.name}\n")
-            schets.put(f,schet.typeOfReestr)
+            schets.put(f, schet)
         }
+
         textArea.appendText("Обработано $countOfFiles файлов\n")
         saveReport(arr, file)
         removeTempDirs()
@@ -102,68 +120,51 @@ class Controller {
             }
         }
     }
-    private fun splitToFolders(){
+
+    private fun splitToFolders() {
         val outDir = Paths.get(pathToDir, "По типам")
-        if (outDir.toFile().exists()){
+        if (outDir.toFile().exists()) {
             FileUtils.cleanDirectory(outDir.toFile())
-        }else{
+        } else {
             outDir.toFile().mkdir()
         }
-        for (s in schets){
-            when(s.value){
-                "основной" -> {
-                    val folder = Paths.get(outDir.toString(),  s.key.name.substring(0..3),"Основные")
-                    if (!folder.toFile().exists()){
+        for (s in schets) {
+            with(s.value) {
+                if (arrayListOf("Диспансеризация взрослого населения",
+                        "Медицинские осмотры взрослых",
+                        "Медицинские осмотры несовершеннолетних",
+                        "Диспансеризация детей-сирот",
+                        "Диспансеризация детей оставшихся без попечения родителей").contains(description)) {
+                    val folder = Paths.get(outDir.toString(), s.key.name.substring(0..3), "Диспансеризация")
+                    if (!folder.toFile().exists()) {
                         folder.toFile().mkdir()
                     }
-                    FileUtils.copyFile(s.key,Paths.get(folder.toString(),s.key.name).toFile())
+                    FileUtils.copyFile(s.key, Paths.get(folder.toString(), s.key.name).toFile())
+                    return@with
                 }
-                "дополнительный" -> {
-                    val folder = Paths.get(outDir.toString(),  s.key.name.substring(0..3),"Дополнительные")
-                    if (!folder.toFile().exists()){
+                if (typeOfReestr == "основной") {
+                    val folder = Paths.get(outDir.toString(), s.key.name.substring(0..3), "Основные")
+                    if (!folder.toFile().exists()) {
+                        folder.toFile().mkdir()
+                    }
+                    FileUtils.copyFile(s.key, Paths.get(folder.toString(), s.key.name).toFile())
+                    return@with
+                }
+                if (typeOfReestr == "дополнительный") {
+                    val folder = Paths.get(outDir.toString(), s.key.name.substring(0..3), "Дополнительные")
+                    if (!folder.toFile().exists()) {
                         folder.toFile().mkdirs()
                     }
-                    FileUtils.copyFile(s.key,Paths.get(folder.toString(),s.key.name).toFile())
+                    FileUtils.copyFile(s.key, Paths.get(folder.toString(), s.key.name).toFile())
+                    return@with
                 }
-                "повторный" -> {
-                    val folder = Paths.get(outDir.toString(), s.key.name.substring(0..3),"Повторные")
-                    if (!folder.toFile().exists()){
+                if (typeOfReestr == "повторный") {
+                    val folder = Paths.get(outDir.toString(), s.key.name.substring(0..3), "Повторные")
+                    if (!folder.toFile().exists()) {
                         folder.toFile().mkdir()
                     }
-                    FileUtils.copyFile(s.key,Paths.get(folder.toString(),s.key.name).toFile())
-                }
-            }
-        }
-    }
-    private fun splitToFoldersByType(){
-        val outDir = Paths.get(pathToDir, "По типам")
-        if (outDir.toFile().exists()){
-            FileUtils.cleanDirectory(outDir.toFile())
-        }else{
-            outDir.toFile().mkdir()
-        }
-        for (s in schets){
-            when(s.value){
-                "основной" -> {
-                    val folder = Paths.get(outDir.toString(),  s.key.name.substring(0..3),"Основные")
-                    if (!folder.toFile().exists()){
-                        folder.toFile().mkdir()
-                    }
-                    FileUtils.copyFile(s.key,Paths.get(folder.toString(),s.key.name).toFile())
-                }
-                "дополнительный" -> {
-                    val folder = Paths.get(outDir.toString(),  s.key.name.substring(0..3),"Дополнительные")
-                    if (!folder.toFile().exists()){
-                        folder.toFile().mkdirs()
-                    }
-                    FileUtils.copyFile(s.key,Paths.get(folder.toString(),s.key.name).toFile())
-                }
-                "повторный" -> {
-                    val folder = Paths.get(outDir.toString(), s.key.name.substring(0..3),"Повторные")
-                    if (!folder.toFile().exists()){
-                        folder.toFile().mkdir()
-                    }
-                    FileUtils.copyFile(s.key,Paths.get(folder.toString(),s.key.name).toFile())
+                    FileUtils.copyFile(s.key, Paths.get(folder.toString(), s.key.name).toFile())
+                    return@with
                 }
             }
         }
@@ -234,13 +235,13 @@ class Controller {
                     setCellValue(schet.description)
                 }
             }
-            sheet.setAutoFilter(CellRangeAddress(0,arr.size,0,8))
-            var lastRowNum = arr.size+2
-            val groupedBySMO = arr.groupBy{it.smo}
-            for (smo in groupedBySMO.keys){
+            sheet.setAutoFilter(CellRangeAddress(0, arr.size, 0, 8))
+            var lastRowNum = arr.size + 2
+            val groupedBySMO = arr.groupBy { it.smo }
+            for (smo in groupedBySMO.keys) {
                 val firstRowForMergeSMO = lastRowNum
                 val groupedByType = groupedBySMO[smo]!!.groupBy { it.typeOfHelp }
-                for (type in groupedByType.keys){
+                for (type in groupedByType.keys) {
                     val firstRowForMergeByType = lastRowNum
                     val groupedByTypeOfReestr = groupedByType[type]!!.groupBy { it.typeOfReestr }
                     for (typeOfReestr in groupedByTypeOfReestr.keys) {
@@ -251,9 +252,9 @@ class Controller {
                         sheet.getRow(lastRowNum).createCell(3, HSSFCell.CELL_TYPE_NUMERIC).setCellValue(summ)
                         lastRowNum++
                     }
-                    sheet.addMergedRegion(CellRangeAddress(firstRowForMergeByType,lastRowNum-1,1,1))
+                    sheet.addMergedRegion(CellRangeAddress(firstRowForMergeByType, lastRowNum - 1, 1, 1))
                 }
-                sheet.addMergedRegion(CellRangeAddress(firstRowForMergeSMO,lastRowNum-1,0,0))
+                sheet.addMergedRegion(CellRangeAddress(firstRowForMergeSMO, lastRowNum - 1, 0, 0))
             }
 
             for (numberOfColumn in 0..8) {
@@ -267,7 +268,7 @@ class Controller {
         }
     }
 
-       private fun readSettings() {
+    private fun readSettings() {
         val prop = Properties()
         if (pathToSettings.toFile().exists()) {
             prop.load(FileInputStream(pathToSettings.toFile()))
@@ -299,7 +300,7 @@ class Controller {
         var outFile: Path? = null
         for (obj in zipFile.fileHeaders) {
             val header = obj as FileHeader
-            if (header.fileName.startsWith("schfakt.xls")) {
+            if (header.fileName.startsWith("schfakt")) {
                 outFile = Paths.get(outDir.toString(), header.fileName)
                 zipFile.extractFile(header, outDir.toString())
             }

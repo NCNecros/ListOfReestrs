@@ -1,15 +1,27 @@
 package com.example
 
 import org.apache.poi.ss.usermodel.WorkbookFactory
+import org.jsoup.Jsoup
+import java.io.File
 import java.io.FileInputStream
 import java.io.FileNotFoundException
 import java.nio.file.Path
 
 class Parser {
     fun parseFileName(f: Path): Triple<String?, String?, Int?> {
-        val smo = "(\\d{4})(\\d{5})(\\d{5})\\.(zip|ZIP)".toRegex().find(f.fileName.toString())?.groups?.get(1)?.value
-        val lpu = "(\\d{4})(\\d{5})(\\d{5})\\.(zip|ZIP)".toRegex().find(f.fileName.toString())?.groups?.get(2)?.value
-        val schetNumber = "(\\d{4})(\\d{5})(\\d{5})\\.(zip|ZIP)".toRegex().find(f.fileName.toString())?.groups?.get(3)?.value?.toInt()
+        var smo = "(\\d{4})(\\d{5})(\\d{5})\\.(zip|ZIP)".toRegex().find(f.fileName.toString())?.groups?.get(1)?.value
+        if (smo.isNullOrBlank()) {
+            smo = "(\\d{4})(\\d{5})(\\d{3})\\.(zip|ZIP)".toRegex().find(f.fileName.toString())?.groups?.get(1)?.value
+        }
+        var lpu = "(\\d{4})(\\d{5})(\\d{5})\\.(zip|ZIP)".toRegex().find(f.fileName.toString())?.groups?.get(2)?.value
+        if (lpu.isNullOrBlank()) {
+            lpu = "(\\d{4})(\\d{5})(\\d{3})\\.(zip|ZIP)".toRegex().find(f.fileName.toString())?.groups?.get(2)?.value
+
+        }
+        var schetNumber = "(\\d{4})(\\d{5})(\\d{5})\\.(zip|ZIP)".toRegex().find(f.fileName.toString())?.groups?.get(3)?.value?.toInt()
+        if (schetNumber == null) {
+            schetNumber = "(\\d{4})(\\d{5})(\\d{3})\\.(zip|ZIP)".toRegex().find(f.fileName.toString())?.groups?.get(3)?.value?.toInt()
+        }
         return Triple(smo, lpu, schetNumber)
     }
 
@@ -32,7 +44,7 @@ class Parser {
 
             for (row in arrayOf(15, 17, 22, 33, 24, 19, 26, 30, 31, 35, 36, 37, 38, 39, 40, 41)) {
                 val cellWithPrice = sheetTwo.getRow(row).getCell(9).stringCellValue
-                if (!cellWithPrice.equals("-")) {
+                if (cellWithPrice != "-") {
                     when (row) {
                         15, 41 -> {
                             schet.typeOfHelp = "Стационар"
@@ -64,6 +76,152 @@ class Parser {
         } catch (e: NullPointerException) {
             println("Неправильный тип счет-фактуры")
             schet.description = "Скорая помощь"
+            schet.typeOfHelp = "Скорая помощь"
+        }
+        return schet
+    }
+
+
+    fun parseHTMLFile(xlsFile: String): Schfakt {
+        val schet = Schfakt()
+        try {
+            val doc = Jsoup.parse(File(xlsFile), "utf-8")
+            val monts = "(декабрь|январь|февраль|март|апрель|май|июнь|июль|август|сентябрь|октябрь|ноябрь)"
+            val types = "(основной|дополнительный|повторный)"
+            val payMethods = "(ОМС|счетам участковой службы|ВМП \\(выс\\.техн\\.МП\\)|доп\\.дисп\\.\\(осмотрам\\) несов\\., сирот|доп\\.дисп\\.\\(осмотрам\\) взр\\. населения)"
+            val elements = doc.select("body > div:nth-child(3) > p:nth-child(2)")
+            val regexGroups = "к реестру счетов № (\\d{1,5}) от (\\d{2}\\.\\d{2}.\\d{4}) за \\d{4} ($monts) ($types) по ($payMethods)".toRegex().find(elements[0].text())
+
+
+
+            schet.dateOfReestr = regexGroups?.groups?.get(2)?.value
+            schet.month = regexGroups?.groups?.get(3)?.value
+            schet.typeOfReestr = regexGroups?.groups?.get(5)?.value
+
+            val rows = doc.select("table[border=1]")[2].select("thead > tr")
+
+
+            rows.forEachIndexed { index, row ->
+                run {
+                    if (index in arrayOf(2, 3, 4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32)) {
+                        val cellWithPrice = row.select("td:nth-child(${row.select("td").size - 1})").text()
+                        if (cellWithPrice != "0") {
+                            if (cellWithPrice != "0.00") {
+                                when (index) {
+                                    2, 3, 11, 12 -> {
+                                        val countOfColumns = row.select("td").size
+                                        schet.typeOfHelp = "Стационар"
+                                        if (countOfColumns == 3) {
+                                            schet.description = rows[index - 1].select("td:nth-child(${rows[index - 1].select("td").size - 3})").text()
+                                        } else {
+                                            schet.description = row.select("td:nth-child(${row.select("td").size - 3})").text()
+                                        }
+                                    }
+
+                                    13, 14, 17, 18, 19 -> {
+                                        val countOfColumns = row.select("td").size
+                                        schet.typeOfHelp = "Дневной стационар"
+                                        if (countOfColumns == 3) {
+                                            schet.description = rows[index - 1].select("td:nth-child(${rows[index - 1].select("td").size - 3})").text()
+                                        } else {
+                                            schet.description = row.select("td:nth-child(${row.select("td").size - 3})").text()
+                                        }
+                                    }
+
+                                    4, 5, 8, 9, 10, 6, 7, 15, 16, 20, 23, 28 -> {
+                                        val countOfColumns = row.select("td").size
+                                        schet.typeOfHelp = "Поликлиника"
+                                        if (countOfColumns == 3) {
+                                            schet.description = rows[index - 1].select("td:nth-child(${rows[index - 1].select("td").size - 3})").text()
+                                        } else {
+                                            schet.description = row.select("td:nth-child(${row.select("td").size - 3})").text()
+                                        }
+                                    }
+
+                                    25, 26, 27 -> {
+                                        val countOfColumns = row.select("td").size
+                                        schet.typeOfHelp = "Диспансеризация"
+                                        if (countOfColumns == 3) {
+                                            schet.description = rows[index - 1].select("td:nth-child(${rows[index - 1].select("td").size - 3})").text()
+                                        } else {
+                                            schet.description = row.select("td:nth-child(${row.select("td").size - 3})").text()
+                                        }
+                                    }
+
+                                    29, 30 -> {
+                                        val countOfColumns = row.select("td").size
+                                        schet.typeOfHelp = "Диспансеризация"
+                                        if (countOfColumns == 3) {
+                                            schet.description = rows[index - 1].select("td:nth-child(${rows[index - 1].select("td").size - 3})").text()
+                                        } else {
+                                            schet.description = row.select("td:nth-child(${row.select("td").size - 3})").text()
+                                        }
+                                    }
+
+                                    31, 32 -> {
+                                        val countOfColumns = row.select("td").size
+                                        schet.typeOfHelp = "ВМП"
+                                        if (countOfColumns == 3) {
+                                            schet.description = rows[index - 1].select("td:nth-child(${rows[index - 1].select("td").size - 3})").text()
+                                        } else {
+                                            schet.description = row.select("td:nth-child(${row.select("td").size - 3})").text()
+                                        }
+                                    }
+
+                                }
+                            }
+                        }
+                    }
+
+                }
+            }
+            schet.price = rows[33].select("td:nth-child(3)").text().toDouble()
+        } catch (e: FileNotFoundException) {
+            println("Не удается найти файл: $xlsFile")
+            schet.description = "Не удается найти файл"
+        } catch (e: IllegalArgumentException) {
+            println("Неправильный тип файла: $xlsFile")
+            schet.description = "Неправильный тип файла"
+        } catch (e: NullPointerException) {
+            println("Неправильный тип счет-фактуры")
+            schet.description = "Скорая помощь"
+            schet.typeOfReestr = "основной"
+            schet.typeOfHelp = "Скорая помощь"
+        }
+        return schet
+    }
+
+    fun parseAmbulanceExcelFile(xlsFile: Path): Schfakt {
+
+        val schet = Schfakt()
+        try {
+            val inputStream = FileInputStream(xlsFile.toFile())
+            val wb = WorkbookFactory.create(inputStream)
+            val sheetOne = wb.getSheetAt(0)
+            val rowThree = sheetOne.getRow(27)
+            val cell = rowThree.getCell(0).stringCellValue + rowThree.getCell(2).stringCellValue
+            val monts = "(декабрь|январь|февраль|март|апрель|май|июнь|июль|август|сентябрь|октябрь|ноябрь)"
+            val types = "(Основной|Дополнительные|Повторные)"
+            val regexGroups = "к\\s+реестру\\s+счетов\\s+№(\\d{1,5})\\s+от\\s+(\\d{2}\\.\\d{2}.\\d{4})г\\.\\s+за\\s+\\d{4}\\s+г\\.\\s+($monts)\\s+($types)\\s+по\\s+.+".toRegex().find(cell)
+
+            schet.dateOfReestr = regexGroups?.groups?.get(2)?.value
+            schet.month = regexGroups?.groups?.get(3)?.value
+            schet.typeOfReestr = regexGroups?.groups?.get(5)?.value
+            val sheetTwo = wb.getSheetAt(1)
+            schet.typeOfHelp = "Скорая помощь"
+            schet.description = "Скорая помощь"
+            schet.price = 0.0
+
+        } catch (e: FileNotFoundException) {
+            println("Не удается найти файл: $xlsFile")
+            schet.description = "Не удается найти файл"
+        } catch (e: IllegalArgumentException) {
+            println("Неправильный тип файла: $xlsFile")
+            schet.description = "Неправильный тип файла"
+        } catch (e: NullPointerException) {
+            println("Неправильный тип счет-фактуры")
+            schet.description = "Скорая помощь"
+            schet.typeOfReestr = "основной"
             schet.typeOfHelp = "Скорая помощь"
         }
         return schet
