@@ -169,7 +169,7 @@
         </dependency>
     </dependencies>
     <properties>
-        <kotlin.version>1.0.0</kotlin.version>
+        <kotlin.version>1.0.6</kotlin.version>
     </properties>
     <scm>
         <developerConnection>scm:git:git@github.com:NCNecros/ListOfReestrs.git</developerConnection>

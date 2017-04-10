@@ -30,7 +30,7 @@ class Controller {
     internal val pathToSettings = Paths.get(System.getProperty("java.io.tmpdir"), "LORSettings")
 
     internal val tempDirs: ArrayList<Path> = ArrayList()
-    internal val parser: Parser = Parser()
+    internal val parser:  Parser = Parser()
     internal val schets: MutableMap<File, Schfakt> = HashMap()
 
 
@@ -57,6 +57,8 @@ class Controller {
         }
     }
 
+
+
     private fun processDir(file: File) {
         var files = FileUtils.listFiles(file, null, true)
         val a = getListOfFiles(files)
@@ -71,9 +73,9 @@ class Controller {
 
             if (xlsFile != null) {
                 if (xlsFile.toString().endsWith("html")) {
-                    schet = parser.parseHTMLFile(xlsFile.toString())
-                }else if(xlsFile.toString().endsWith("xls")){
-                    if (lpu == "06540"){
+                    schet = parser.parseHTMLFileAlt(xlsFile.toString())
+                } else if (xlsFile.toString().endsWith("xls")) {
+                    if (lpu == "06540") {
                         schet = parser.parseAmbulanceExcelFile(xlsFile)
                     } else {
                         schet = parser.parseExcelFile(xlsFile)
@@ -130,11 +132,20 @@ class Controller {
         }
         for (s in schets) {
             with(s.value) {
-                if (arrayListOf("Диспансеризация взрослого населения",
-                        "Медицинские осмотры взрослых",
-                        "Медицинские осмотры несовершеннолетних",
-                        "Диспансеризация детей-сирот",
-                        "Диспансеризация детей оставшихся без попечения родителей").contains(description)) {
+//                if (arrayListOf("Диспансеризация взрослого населения",
+//                        "Медицинские осмотры взрослых",
+//                        "Медицинские осмотры несовершеннолетних",
+//                        "Диспансеризация детей-сирот",
+//                        "Диспансеризация детей оставшихся без попечения родителей",
+//                        "(I этап) Диспансеризация взрослого населения").contains(description)) {
+//                    val folder = Paths.get(outDir.toString(), s.key.name.substring(0..3), "Диспансеризация")
+//                    if (!folder.toFile().exists()) {
+//                        folder.toFile().mkdir()
+//                    }
+//                    FileUtils.copyFile(s.key, Paths.get(folder.toString(), s.key.name).toFile())
+//                    return@with
+//                }
+                if (typeOfHelp == "Диспансеризация") {
                     val folder = Paths.get(outDir.toString(), s.key.name.substring(0..3), "Диспансеризация")
                     if (!folder.toFile().exists()) {
                         folder.toFile().mkdir()
@@ -232,7 +243,7 @@ class Controller {
                 }
                 with(row.createCell(8)) {
                     cellType = Cell.CELL_TYPE_STRING
-                    setCellValue(schet.description)
+                    setCellValue(schet.description.removeSuffix("\n"))
                 }
             }
             sheet.setAutoFilter(CellRangeAddress(0, arr.size, 0, 8))
