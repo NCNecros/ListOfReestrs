@@ -82,11 +82,11 @@ class Controller {
                     }
                 }
             }
-            if (lpu == "06540") {
-                schet.typeOfHelp = "скорая медицинская помощь"
-                schet.typeOfReestr = "основной"
-                schet.description = "Скорая помощь"
-            }
+//            if (lpu == "06540") {
+//                schet.typeOfHelp = "скорая медицинская помощь"
+//                schet.typeOfReestr = "основной"
+//                schet.description = "Скорая помощь"
+//            }
             schet.smo = smo
             schet.lpu = lpu
             schet.schetNumber = schetNumber
@@ -132,19 +132,6 @@ class Controller {
         }
         for (s in schets) {
             with(s.value) {
-//                if (arrayListOf("Диспансеризация взрослого населения",
-//                        "Медицинские осмотры взрослых",
-//                        "Медицинские осмотры несовершеннолетних",
-//                        "Диспансеризация детей-сирот",
-//                        "Диспансеризация детей оставшихся без попечения родителей",
-//                        "(I этап) Диспансеризация взрослого населения").contains(description)) {
-//                    val folder = Paths.get(outDir.toString(), s.key.name.substring(0..3), "Диспансеризация")
-//                    if (!folder.toFile().exists()) {
-//                        folder.toFile().mkdir()
-//                    }
-//                    FileUtils.copyFile(s.key, Paths.get(folder.toString(), s.key.name).toFile())
-//                    return@with
-//                }
                 if (typeOfHelp == "Диспансеризация") {
                     val folder = Paths.get(outDir.toString(), s.key.name.substring(0..3), "Диспансеризация")
                     if (!folder.toFile().exists()) {

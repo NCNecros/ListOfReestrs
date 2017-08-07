@@ -296,7 +296,7 @@ class Parser {
             val rowThree = sheetOne.getRow(27)
             val cell = rowThree.getCell(0).stringCellValue + rowThree.getCell(2).stringCellValue
             val monts = "(декабрь|январь|февраль|март|апрель|май|июнь|июль|август|сентябрь|октябрь|ноябрь)"
-            val types = "(Основной|Дополнительные|Повторные)"
+            val types = "(Основной|Дополнительный|Повторный)"
             val regexGroups = "к\\s+реестру\\s+счетов\\s+№(\\d{1,5})\\s+от\\s+(\\d{2}\\.\\d{2}.\\d{4})г\\.\\s+за\\s+\\d{4}\\s+г\\.\\s+($monts)\\s+($types)\\s+по\\s+.+".toRegex().find(cell)
 
             schet.dateOfReestr = regexGroups?.groups?.get(2)?.value
@@ -305,7 +305,7 @@ class Parser {
             val sheetTwo = wb.getSheetAt(1)
             schet.typeOfHelp = "Скорая помощь"
             schet.description = "Скорая помощь"
-            schet.price = 0.0
+            schet.price = if (sheetOne.getRow(16).getCell(17).toString().isNotEmpty()) sheetOne.getRow(16).getCell(17).toString().toDouble() else 0.0
 
         } catch (e: FileNotFoundException) {
             println("Не удается найти файл: $xlsFile")

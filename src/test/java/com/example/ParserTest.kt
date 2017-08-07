@@ -14,7 +14,6 @@ class ParserTest {
     @Test
     fun whenFilenameParserTakeFilenameItWillReturnCorrectData() {
         val (smo, lpu, number) = parser.parseFileName(Paths.get("12070600800228.zip"))
-
         assertEquals(smo, "1207")
         assertEquals(lpu, "06008")
         assertEquals(number, 228)
@@ -41,25 +40,5 @@ class ParserTest {
         assertEquals(s.typeOfReestr, "основной")
         assertEquals(s.typeOfHelp, "Дневной стационар")
         assertEquals(s.price, 64751.66, 0.0)
-    }
-
-
-    fun whenParserTakeTheCorrectStacionarHTMLFileItWillReturnFilledObject(){
-        val s = parser.parseHTMLFile("d:/Temp/2017-01-31/schfakt.html")
-        assertEquals(s.dateOfReestr,"31.12.2016")
-        assertEquals(s.typeOfReestr,"дополнительный")
-        assertEquals(s.typeOfHelp,"Стационар")
-        assertEquals(s.price,230697.31,0.0)
-        assertEquals(s.description,"Стационар")
-    }
-
-
-    fun whenParserTakeTheCorrectPolicHTMLFileItWillReturnFilledObject(){
-        val s = parser.parseHTMLFile("d:/Temp/2017-01-31/schfakt2.html")
-        assertEquals(s.dateOfReestr,"31.12.2016")
-        assertEquals(s.typeOfReestr,"основной")
-        assertEquals(s.typeOfHelp,"Поликлиника")
-        assertEquals(s.price,270165.18,0.0)
-        assertEquals(s.description,"Поликлиника")
     }
 }
