@@ -1,8 +1,8 @@
 package com.example
 
 import org.junit.Test
-import org.mockito.Mockito.*;
-import org.junit.Assert.*;
+import org.mockito.Mockito.*
+import org.junit.Assert.*
 import java.io.File
 
 /**
