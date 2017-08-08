@@ -1,13 +1,32 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.geometry.*?>
+<?import java.lang.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.layout.VBox?>
-<VBox alignment="CENTER" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity"
-      prefHeight="251.0" prefWidth="490.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="com.example.Controller">
-   <TextArea fx:id="textArea" editable="false" prefHeight="264.0" prefWidth="600.0" wrapText="true"
-             VBox.vgrow="ALWAYS"/>
-   <Button fx:id="button" alignment="CENTER" contentDisplay="CENTER" mnemonicParsing="false" onAction="#click"
-           text="Выбрать каталог" textAlignment="CENTER"/>
+
+<VBox alignment="CENTER" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="251.0" prefWidth="490.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.Controller">
+   <children>
+      <HBox alignment="CENTER_LEFT" maxWidth="1.7976931348623157E308" prefHeight="100.0" prefWidth="200.0">
+         <opaqueInsets>
+            <Insets />
+         </opaqueInsets>
+         <padding>
+            <Insets left="15.0" />
+         </padding>
+         <children>
+            <CheckBox fx:id="copyToFolder" maxWidth="1.7976931348623157E308" mnemonicParsing="false" selected="true" text="Разложить по каталогам" HBox.hgrow="ALWAYS">
+               <padding>
+                  <Insets right="10.0" />
+               </padding>
+            </CheckBox>
+            <CheckBox fx:id="resultXLS" maxWidth="1.7976931348623157E308" mnemonicParsing="false" selected="true" text="Сформировать итог" HBox.hgrow="ALWAYS" />
+         </children>
+      </HBox>
+      <TextArea fx:id="textArea" editable="false" prefHeight="264.0" prefWidth="600.0" wrapText="true" VBox.vgrow="ALWAYS" />
+      <Button fx:id="button" alignment="CENTER" contentDisplay="CENTER" mnemonicParsing="false" onAction="#click" text="Выбрать каталог" textAlignment="CENTER" />
+   </children>
 </VBox>

@@ -2,6 +2,7 @@ package com.example
 
 import javafx.fxml.FXML
 import javafx.scene.control.Button
+import javafx.scene.control.CheckBox
 import javafx.scene.control.TextArea
 import javafx.stage.DirectoryChooser
 import net.lingala.zip4j.core.ZipFile
@@ -26,11 +27,17 @@ class Controller {
     internal lateinit var button: Button
     @FXML
     internal lateinit var textArea: TextArea
+
+    @FXML
+    internal lateinit var copyToFolder: CheckBox
+    @FXML
+    internal lateinit var resultXLS: CheckBox
+
     internal var pathToDir: String = ""
     internal val pathToSettings = Paths.get(System.getProperty("java.io.tmpdir"), "LORSettings")
 
     internal val tempDirs: ArrayList<Path> = ArrayList()
-    internal val parser:  Parser = Parser()
+    internal val parser: Parser = Parser()
     internal val schets: MutableMap<File, Schfakt> = HashMap()
 
 
@@ -56,7 +63,6 @@ class Controller {
             processDir(dir)
         }
     }
-
 
 
     private fun processDir(file: File) {
@@ -96,9 +102,13 @@ class Controller {
         }
 
         textArea.appendText("Обработано $countOfFiles файлов\n")
-        saveReport(arr, file)
+        if (resultXLS.isSelected) {
+            saveReport(arr, file)
+        }
         removeTempDirs()
-        splitToFolders()
+        if (copyToFolder.isSelected) {
+            splitToFolders()
+        }
     }
 
     fun getListOfFiles(files: MutableCollection<File>): List<File> {
@@ -163,8 +173,7 @@ class Controller {
                     }
                     FileUtils.copyFile(key, Paths.get(folder.toString(), key.name).toFile())
                     return@with
-                }
-                else{
+                } else {
                     println(key.name)
                     return@with
                 }
