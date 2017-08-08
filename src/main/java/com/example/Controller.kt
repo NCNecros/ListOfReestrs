@@ -142,7 +142,7 @@ class Controller {
         }
         for ((key, value) in schets) {
             with(value) {
-                if (typeOfHelp?.toLowerCase() == "Диспансеризация") {
+                if (typeOfHelp?.toLowerCase() == "диспансеризация") {
                     val folder = Paths.get(outDir.toString(), key.name.substring(0..3), "Диспансеризация")
                     if (!folder.toFile().exists()) {
                         folder.toFile().mkdir()
