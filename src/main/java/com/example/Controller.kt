@@ -158,7 +158,7 @@ class Controller {
                     FileUtils.copyFile(key, Paths.get(folder.toString(), key.name).toFile())
                     return@with
                 }
-                if (typeOfReestr?.toLowerCase() == "дополнительный") {
+                if (typeOfReestr?.toLowerCase() == "дополнительный" || typeOfReestr?.toLowerCase() == "дополнительные") {
                     val folder = Paths.get(outDir.toString(), key.name.substring(0..3), "Дополнительные")
                     if (!folder.toFile().exists()) {
                         folder.toFile().mkdirs()

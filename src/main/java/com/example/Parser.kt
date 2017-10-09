@@ -33,7 +33,7 @@ class Parser {
             val sheetOne = wb.getSheetAt(0)
             val rowThree = sheetOne.getRow(2)
             val cell = rowThree.getCell(0)
-            val monts = "(Декабрь|Январь|Февраль|Март|Апрель|Май|Июнь|Июль|Август|Сентябрь|Октябрь|Ноябрь)"
+            val monts = "(Декабрь|Январь|Февраль|Март|Апрель|Май|Июнь|Июль|Август|Сентябрь|Октябрь|Ноябрь|Декабрь|январь|февраль|март|апрель|май|июнь|июль|август|сентябрь|октябрь|ноябрь)"
             val types = "(основной|дополнительный|повторный)"
             val regexGroups = " к реестру счетов №(\\d{1,5}) от (\\d{2}\\.\\d{2}.\\d{4}) за \\d{4} ($monts) ($types) по .+".toRegex().find(cell.stringCellValue)
 
@@ -103,6 +103,8 @@ class Parser {
             "поликлиника (участковая служба) взрослые",
             "поликлиника (участковая служба) дети",
             "Поликлиника взрослая",
+            "поликлиника (прикрепленное население) дети",
+            "поликлиника (прикрепленное население) взрослые",
             "Поликлиника детская",
             "Центр здоровья взрослый",
             "Приемное отделение взрослого стационара",
@@ -123,18 +125,19 @@ class Parser {
     fun parseHTMLFileAlt(htmlFile: String): Schfakt {
         val schet = Schfakt()
         try {
+            var text = ""
             val doc = Jsoup.parse(File(htmlFile), "utf-8")
             val monts = "(декабрь|январь|февраль|март|апрель|май|июнь|июль|август|сентябрь|октябрь|ноябрь)"
-            val types = "(основной|дополнительный|повторный)"
-            val payMethods = "(ОМС|счетам участковой службы|ВМП \\(выс\\.техн\\.МП\\)|доп\\.дисп\\.\\(осмотрам\\) несов\\.?, сирот|доп\\.дисп\\.\\(осмотрам\\) взр\\. населения|доп\\.дисп\\.\\(осмотрам\\) взр\\. населен)"
+            val types = "(основной|дополнительный|повторный|дополнительные)"
+            val payMethods = "(ОМС|счетам участковой службы|ВМП \\(выс\\.техн\\.МП\\)|доп\\.дисп\\.\\(осмотрам\\) несов\\.?, сирот|доп\\.дисп\\.\\(осмотрам\\) взр\\. населения|доп\\.дисп\\.\\(осмотрам\\) взр\\. населен|основной по счетам по подуш\\. финансирование|счетам по подуш\\. финансирование)"
             val elements = doc.select("body > div:nth-child(3) > p:nth-child(2)")
-            val regexGroups = "к реестру счетов № (\\d{1,5}) от (\\d{2}\\.\\d{2}.\\d{4}) за \\d{4} ($monts) ($types) по ($payMethods)".toRegex().find(elements[0].text())
+            val regexGroups = "к реестру счетов № (\\d{1,5}) от (\\d{2}\\.\\d{2}.\\d{4}) за \\d{4} ($monts) ($types)\\s+([А-Яа-я - .])".toRegex().find(elements[0].text())
 
 
 
             schet.dateOfReestr = regexGroups?.groups?.get(2)?.value
             schet.month = regexGroups?.groups?.get(3)?.value
-            schet.typeOfReestr = regexGroups?.groups?.get(5)?.value
+            schet.typeOfReestr = regexGroups?.groups?.get(6)?.value
 
             val rows = doc.select("table[border=1]")[1].select("thead > tr")
 
