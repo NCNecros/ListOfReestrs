@@ -116,9 +116,11 @@ class Controller {
             (it.name.endsWith("zip") || it.name.endsWith("ZIP")) &&
                     (it.name.startsWith("1207")
                             || it.name.startsWith("1507")
+                            || it.name.startsWith("1707")
                             || it.name.startsWith("1107")
                             || it.name.startsWith("1807")
                             || it.name.startsWith("9007")
+                            || it.name.startsWith("1607")
                             || it.name.startsWith("4407")) && !(it.path.contains("По типам"))
         }
     }
