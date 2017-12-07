@@ -116,9 +116,11 @@ class Controller {
             (it.name.endsWith("zip") || it.name.endsWith("ZIP")) &&
                     (it.name.startsWith("1207")
                             || it.name.startsWith("1507")
+                            || it.name.startsWith("1707")
                             || it.name.startsWith("1107")
                             || it.name.startsWith("1807")
                             || it.name.startsWith("9007")
+                            || it.name.startsWith("1607")
                             || it.name.startsWith("4407")) && !(it.path.contains("По типам"))
         }
     }
@@ -158,7 +160,7 @@ class Controller {
                     FileUtils.copyFile(key, Paths.get(folder.toString(), key.name).toFile())
                     return@with
                 }
-                if (typeOfReestr?.toLowerCase() == "дополнительный") {
+                if (typeOfReestr?.toLowerCase() == "дополнительный" || typeOfReestr?.toLowerCase() == "дополнительные") {
                     val folder = Paths.get(outDir.toString(), key.name.substring(0..3), "Дополнительные")
                     if (!folder.toFile().exists()) {
                         folder.toFile().mkdirs()
